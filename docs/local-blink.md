@@ -4,6 +4,8 @@ Blink uses QwenPaw's native Jev decision interface for tool review and ReMe cont
 
 ## Download and enable
 
+The local model selector separates **Chat models** and **Decision models** into independently scrollable sections. Both use the same managed runtime, which serves one model at a time. Repository IDs are shown as plain text; existing download and lifecycle controls are retained.
+
 1. In **Models → Local models**, download the appropriate Blink GGUF and use the existing **Start** control. Starting Blink selects the decision model slot; it does not replace the default chat selection on another provider.
 2. Check **Models → Default models → Decision model**. An agent-specific decision model can override the global selection.
 3. For tool review, enable automatic review, select **Decision Model Mode** in the agent's security settings, and enable review in the conversation.
@@ -58,3 +60,13 @@ Q8_0 is the release target. An initial 4B Q4_K_M smoke test changed the top scor
 All text backbone layers and the output projection are retained. MTP and the vision encoder are not used by this text decision path; the original Hugging Face checkpoint remains complete. Verify the BF16 conversion against the full Transformers reference first, then measure quantization error separately. The model repository includes the reference inference script and third-party license notice.
 
 `test-blink-layout MODEL.gguf REQUEST.json` emits the actual runtime input and candidate token IDs for comparison with the checkpoint tokenizer; it uses vocabulary-only loading and is a formatter check, not an inference test.
+
+## Console screenshots
+
+English local model selector:
+
+![Chat and decision models in the local selector](images/local-models-en.jpg)
+
+Chinese local model selector:
+
+![Chinese local model selector](images/local-models-zh.jpg)

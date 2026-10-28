@@ -2887,6 +2887,8 @@
     "localServerSwitchConfirm": "The current server is running {{current}}. Switch to {{next}}?",
     "localSwitchModel": "Switch",
     "localModelPathMissing": "This downloaded model is missing a local path.",
+    "localChatModelsTitle": "Chat models",
+    "localDecisionModelsTitle": "Decision models",
     "localModelsSectionTitle": "Local Models",
     "localModelsSectionDescription": "Downloaded models can be started immediately. Only one model download and one local server instance can run at a time.",
     "localModelsLockedHint": "Please install llama.cpp first",

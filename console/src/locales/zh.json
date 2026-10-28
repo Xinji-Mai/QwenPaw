@@ -2746,6 +2746,8 @@
     "localServerSwitchConfirm": "当前服务正在运行 {{current}}。确认切换到 {{next}}？",
     "localSwitchModel": "切换",
     "localModelPathMissing": "该已下载模型缺少本地路径信息。",
+    "localChatModelsTitle": "对话模型",
+    "localDecisionModelsTitle": "决策模型",
     "localModelsSectionTitle": "本地模型",
     "localModelsSectionDescription": "下载后即可启动；当前只允许一个模型下载任务和一个本地服务实例。",
     "localModelsLockedHint": "请先安装 llama.cpp",

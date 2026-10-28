@@ -42,29 +42,23 @@ export const LocalModelRow = memo(function LocalModelRow({
   const isRunning = currentRunningModelName === model.id;
   const isStarting = startingModelName === model.id;
   const isDeleting = deletingModelName === model.id;
-  const isDecisionModel = model.model_type === "decision";
+  // Keep stored IDs for lifecycle actions on legacy downloads.
+  const displayRepoId = model.id.replace(
+    /^AgentScope\/((?:CoPaw|QwenPaw)-Flash-)/,
+    "agentscope-ai/$1",
+  );
+
+  const displayName =
+    model.name === model.id
+      ? model.id.split("/").pop() || model.name
+      : model.name;
 
   return (
     <div className={styles.modelListItem}>
       <div className={styles.modelListItemInfo}>
-        <span className={styles.modelListItemName}>{model.name}</span>
-        {isDecisionModel && (
-          <span className={styles.customModelHint}>
-            {t("models.localDecisionPurpose")}
-          </span>
-        )}
+        <span className={styles.modelListItemName}>{displayName}</span>
         <span className={styles.modelListItemId}>
-          {isDecisionModel && model.source === "huggingface" ? (
-            <a
-              href={`https://huggingface.co/${model.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {model.id}
-            </a>
-          ) : (
-            model.id
-          )}
+          {displayRepoId}
           {model.size_bytes != null && ` · ${prettyBytes(model.size_bytes)}`}
         </span>
       </div>

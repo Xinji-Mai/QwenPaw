@@ -432,10 +432,13 @@ class TestRecommendedModels:
             lambda: memory_gb,
         )
         models = manager.get_recommended_models()
-        expected = {
-            "AgentScope/QwenPaw-Flash-9B-Q4_K_M": DownloadSource.MODELSCOPE,
-            "AgentScope/QwenPaw-Flash-9B-Q8_0": DownloadSource.MODELSCOPE,
-        }
+        expected = dict.fromkeys(
+            (
+                "agentscope-ai/QwenPaw-Flash-9B-Q4_K_M",
+                "agentscope-ai/QwenPaw-Flash-9B-Q8_0",
+            ),
+            DownloadSource.HUGGINGFACE,
+        )
         for size, minimum in ((4, 16), (9, 24), (27, 48)):
             if memory_gb >= minimum:
                 model_id = f"agentscope-ai/Blink-{size}B-Q8_0"
