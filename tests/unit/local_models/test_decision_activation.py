@@ -20,7 +20,10 @@ from qwenpaw.providers.provider import ModelInfo
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("isolated_secret_dir")
-async def test_start_restore_and_stop_local_decision_preserves_chat():
+@pytest.mark.parametrize("runtime_type", ["chat", "decision"])
+async def test_start_restore_and_stop_local_decision_preserves_chat(
+    runtime_type,
+):
     manager = ProviderManager()
     chat = ModelSlotConfig(provider_id="openai", model="chat-fixture")
     manager.active_model = chat
@@ -30,7 +33,11 @@ async def test_start_restore_and_stop_local_decision_preserves_chat():
     async def setup(*_args, **_kwargs):
         return LlamaCppServerSetupResult(
             port=9001,
-            model_info=ModelInfo(id=model_id, name="Blink fixture"),
+            model_info=ModelInfo(
+                id=model_id,
+                name="Blink fixture",
+                model_type=runtime_type,
+            ),
         )
 
     local_manager = SimpleNamespace(
@@ -39,7 +46,10 @@ async def test_start_restore_and_stop_local_decision_preserves_chat():
         is_model_downloaded=lambda _: True,
     )
     result = await start_llamacpp_server(
-        StartServerRequest(model_id=model_id, model_type="decision"),
+        StartServerRequest(
+            model_id=model_id,
+            model_type="chat" if runtime_type == "decision" else "decision",
+        ),
         local_manager,
         manager,
     )

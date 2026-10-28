@@ -48,17 +48,18 @@ QwenPaw Local will automatically record the model's running state. If you close 
 
 ### Local decision models
 
-Blink-27B uses the same download and runtime controls as local chat models. Its
-Hugging Face repository is
-[`agentscope-ai/Blink-27B`](https://huggingface.co/agentscope-ai/Blink-27B); the
-llama.cpp runtime requires compatible GGUF weights.
+Blink uses the same download and Start controls as local chat models. The
+complete checkpoint repositories are `agentscope-ai/Blink-4B`,
+`agentscope-ai/Blink-9B`, and `agentscope-ai/Blink-27B`. Local GGUF variants use
+separate repositories with a `-Q8_0` suffix, following QwenPaw-Flash's naming.
 
-1. Open **Models → QwenPaw Local → Models**, download **Blink-27B**, and click
-   **Start**. If it is absent from the recommended list, use the custom download
-   field with the same repository ID and Hugging Face as the source.
-2. Confirm **QwenPaw Local / Blink-27B** under **Default models → Decision model**.
-   Starting this catalog entry sets the decision default, independently of the
-   chat model selection. The embedded runtime serves one local model at a time.
+1. Open **Models → QwenPaw Local → Models**, download the appropriate **Blink Q8_0**
+   model, and click **Start**. If it is absent from the recommended list, use the
+   custom download field, for example `agentscope-ai/Blink-27B-Q8_0`, with Hugging
+   Face as the source.
+2. Confirm **QwenPaw Local / Blink** under **Default models → Decision model**.
+   Starting this catalog entry sets the decision default. The embedded runtime
+   serves one local model at a time; it replaces any chat model in that runtime.
 3. For automatic review, enable **Use decision model** in the chat model menu's
    **Advanced options**, then select **Decision Model Mode** in the approval menu.
    The agent's default mode is also configurable under
@@ -67,12 +68,18 @@ llama.cpp runtime requires compatible GGUF weights.
    **Enable Context Compaction**, and turn on **Decision model compaction**.
    This switch is independent of the chat decision toggle.
 
-Starting a model does not enable review or compaction. Compatible models imported
-into Ollama can use the same workflow after being registered with the
-**decision** model type and selected as the decision model. The local adapter
-requires structured JSON responses for binary and choice questions. Its
-probabilities are model-reported estimates, not calibrated Jev scores. Invalid
-responses retain the native human-approval or normal-compaction fallback.
+Starting a model does not enable review or compaction. Blink currently requires
+the companion llama.cpp patch and runtime installation described in
+[the local Blink guide](https://github.com/agentscope-ai/QwenPaw/blob/main/docs/local-blink.md).
+An unpatched upstream binary or ordinary Ollama Chat Completions does not support
+Blink's inference contract.
+
+The native Jev interface sends questions to `/v1/systemone`. The runtime applies
+bidirectional prompt attention in full-attention layers, preserves the original
+linear-attention computation, and returns probabilities computed from candidate
+token logits. It does not generate JSON answers or probability estimates.
+Invalid responses retain the native human-approval or normal-compaction fallback.
+Candidate probabilities still require task-specific calibration and evaluation.
 
 ## Ollama Configuration
 

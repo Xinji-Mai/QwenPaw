@@ -7,6 +7,7 @@ model tiers, the download worker / result finalization helpers, the
 staging-directory promotion and cleanup helpers, and the on-disk
 model discovery utilities.
 """
+
 # pylint: disable=protected-access,redefined-outer-name,unused-argument
 from __future__ import annotations
 
@@ -60,6 +61,54 @@ class TestEstimateHuggingfaceSize:
         )
         self._install_fake_api(monkeypatch, api)
         assert manager._estimate_huggingface_size("org/repo") == 150
+
+    def test_blink_download_and_size_exclude_full_checkpoint(
+        self,
+        manager,
+        monkeypatch,
+        tmp_path,
+    ):
+        import fnmatch
+        import huggingface_hub
+
+        files = {
+            "Blink-4B-Q8_0.gguf": 100,
+            "README.md": 10,
+            "LICENSE": 10,
+            "decision-inference.json": 10,
+            "model-00001-of-00002.safetensors": 900,
+            "model-frozen-auxiliary.safetensors": 100,
+        }
+        api = MagicMock()
+        api.repo_info.return_value = SimpleNamespace(
+            siblings=[
+                SimpleNamespace(rfilename=name, size=size)
+                for name, size in files.items()
+            ],
+        )
+        self._install_fake_api(monkeypatch, api)
+        assert (
+            manager._estimate_huggingface_size("agentscope-ai/Blink-4B-Q8_0")
+            == 130
+        )
+        download = MagicMock(return_value=str(tmp_path))
+        monkeypatch.setattr(huggingface_hub, "snapshot_download", download)
+        manager._download_from_huggingface(
+            "agentscope-ai/Blink-4B-Q8_0",
+            tmp_path,
+        )
+        patterns = download.call_args.kwargs["allow_patterns"]
+        selected = {
+            name
+            for name in files
+            if any(fnmatch.fnmatch(name, pat) for pat in patterns)
+        }
+        assert selected == {
+            "Blink-4B-Q8_0.gguf",
+            "README.md",
+            "LICENSE",
+            "decision-inference.json",
+        }
 
     def test_returns_none_when_no_sized_files(self, manager, monkeypatch):
         api = MagicMock()
@@ -342,7 +391,8 @@ class TestRecommendedModels:
         monkeypatch.setattr(manager, "_detect_available_memory_gb", lambda: 8)
         models = manager.get_recommended_models()
         assert len(models) == 2
-        assert all("2B" in m.id for m in models)
+        assert all("2B" in m.id for m in models if m.model_type == "chat")
+        assert not [m for m in models if m.model_type == "decision"]
 
     def test_16gb_tier_recommends_4b_models(self, manager, monkeypatch):
         monkeypatch.setattr(
@@ -352,7 +402,10 @@ class TestRecommendedModels:
         )
         models = manager.get_recommended_models()
         assert models
-        assert all("4B" in m.id for m in models)
+        assert all("4B" in m.id for m in models if m.model_type == "chat")
+        assert {m.id for m in models if m.model_type == "decision"} == {
+            "agentscope-ai/Blink-4B-Q8_0",
+        }
 
     @pytest.mark.parametrize(
         ("memory_gb", "large_quantizations"),
@@ -383,8 +436,10 @@ class TestRecommendedModels:
             "AgentScope/QwenPaw-Flash-9B-Q4_K_M": DownloadSource.MODELSCOPE,
             "AgentScope/QwenPaw-Flash-9B-Q8_0": DownloadSource.MODELSCOPE,
         }
-        if memory_gb >= 24:
-            expected["agentscope-ai/Blink-27B"] = DownloadSource.HUGGINGFACE
+        for size, minimum in ((4, 16), (9, 24), (27, 48)):
+            if memory_gb >= minimum:
+                model_id = f"agentscope-ai/Blink-{size}B-Q8_0"
+                expected[model_id] = DownloadSource.HUGGINGFACE
         for size in ("27B", "35B-A3B"):
             for quantization in large_quantizations:
                 model_id = f"agentscope-ai/QwenPaw-Flash-{size}-{quantization}"

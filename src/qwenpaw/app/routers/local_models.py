@@ -312,7 +312,12 @@ async def start_llamacpp_server(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
-        setup_result.model_info.model_type = payload.model_type
+        model_type = (
+            "decision"
+            if setup_result.model_info.model_type == "decision"
+            else payload.model_type
+        )
+        setup_result.model_info.model_type = model_type
         await provider_manager.update_provider_async(
             "qwenpaw-local",
             {
@@ -323,7 +328,7 @@ async def start_llamacpp_server(
         await provider_manager.activate_model(
             provider_id="qwenpaw-local",
             model_id=setup_result.model_info.id,
-            model_type=payload.model_type,
+            model_type=model_type,
         )
     except (ValueError, AppBaseException) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

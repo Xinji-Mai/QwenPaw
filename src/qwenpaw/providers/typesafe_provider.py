@@ -38,7 +38,7 @@ def resolve_decision_model(slot=None, *, default_model: str | None = None):
     if slot is None and default_model is None:
         raise TypeSafeEvaluationError("Configure a decision model")
     provider_id = slot.provider_id if slot is not None else "typesafe"
-    if provider_id not in {"typesafe", "qwenpaw-local", "ollama"}:
+    if provider_id not in {"typesafe", "qwenpaw-local"}:
         raise TypeSafeEvaluationError("Decision model provider is unsupported")
     provider = manager.get_provider(provider_id)
     expected = (

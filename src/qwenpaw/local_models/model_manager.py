@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import fnmatch
 import importlib
 import logging
 import multiprocessing as mp
@@ -34,7 +35,17 @@ from ..providers.provider import ModelInfo
 from ..constant import DEFAULT_LOCAL_PROVIDER_DIR
 
 logger = logging.getLogger(__name__)
-BLINK_REPO_ID = "agentscope-ai/Blink-27B"
+BLINK_REPO_IDS = {
+    f"agentscope-ai/Blink-{size}B{suffix}"
+    for size in (4, 9, 27)
+    for suffix in ("", "-Q8_0", "-Q4_K_M")
+}
+BLINK_DOWNLOAD_PATTERNS = [
+    "*.gguf",
+    "LICENSE",
+    "README.md",
+    "decision-inference.json",
+]
 
 
 class DownloadSource(str, Enum):
@@ -134,13 +145,6 @@ class ModelManager:
             models.extend(
                 [
                     LocalModelInfo(
-                        id=BLINK_REPO_ID,
-                        name="Blink-27B",
-                        model_type="decision",
-                        size_bytes=None,
-                        source=DownloadSource.HUGGINGFACE,
-                    ),
-                    LocalModelInfo(
                         id="agentscope-ai/QwenPaw-Flash-27B-Q4_K_M",
                         name="QwenPaw-Flash-27B-Q4_K_M",
                         size_bytes=16547398880,
@@ -172,6 +176,18 @@ class ModelManager:
                 ],
             )
 
+        for size, minimum_memory in ((4, 16), (9, 24), (27, 48)):
+            if memory_gb >= minimum_memory:
+                models.append(
+                    LocalModelInfo(
+                        id=f"agentscope-ai/Blink-{size}B-Q8_0",
+                        name=f"Blink-{size}B-Q8_0",
+                        model_type="decision",
+                        size_bytes=None,
+                        source=DownloadSource.HUGGINGFACE,
+                    ),
+                )
+
         # check local download status for each recommended model
         for model in models:
             model.downloaded = self.is_downloaded(model.id)
@@ -201,11 +217,13 @@ class ModelManager:
         for entry in self._iter_downloaded_model_dirs():
             repo_id = self._infer_repo_id_from_path(entry)
             size_bytes = self._calculate_downloaded_size(entry)
-            is_blink = repo_id == BLINK_REPO_ID
+            is_blink = repo_id in BLINK_REPO_IDS
             models.append(
                 LocalModelInfo(
                     id=repo_id,
-                    name="Blink-27B" if is_blink else repo_id,
+                    name=repo_id.rsplit("/", maxsplit=1)[-1]
+                    if is_blink
+                    else repo_id,
                     model_type="decision" if is_blink else "chat",
                     source=(
                         DownloadSource.HUGGINGFACE
@@ -435,9 +453,14 @@ class ModelManager:
                 "huggingface_hub is required for Hugging Face downloads.",
             ) from exc
 
+        kwargs = {}
+        if repo_id in BLINK_REPO_IDS:
+            # Fetch only GGUF/runtime metadata, including for legacy base IDs.
+            kwargs["allow_patterns"] = BLINK_DOWNLOAD_PATTERNS
         return snapshot_download(
             repo_id=repo_id,
             local_dir=str(local_dir),
+            **kwargs,
         )
 
     @staticmethod
@@ -453,9 +476,12 @@ class ModelManager:
             buffering=1,
             errors="replace",
         ) as sink_stream:
-            with contextlib.redirect_stdout(
-                sink_stream,
-            ), contextlib.redirect_stderr(sink_stream):
+            with (
+                contextlib.redirect_stdout(
+                    sink_stream,
+                ),
+                contextlib.redirect_stderr(sink_stream),
+            ):
                 return ModelManager._get_modelscope_snapshot_download()(
                     model_id=repo_id,
                     local_dir=str(local_dir),
@@ -489,6 +515,11 @@ class ModelManager:
             if not isinstance(name, str) or not isinstance(size, int):
                 continue
             if name.startswith("."):
+                continue
+            if repo_id in BLINK_REPO_IDS and not any(
+                fnmatch.fnmatch(name, pattern)
+                for pattern in BLINK_DOWNLOAD_PATTERNS
+            ):
                 continue
             total += size
             found = True

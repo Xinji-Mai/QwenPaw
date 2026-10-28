@@ -295,6 +295,10 @@ class LlamaCppBackend:
         try:
             logger.info("Waiting for llama.cpp server to become ready...")
             await self.server_ready()
+            from .model_manager import BLINK_REPO_IDS
+
+            if model_name in BLINK_REPO_IDS:
+                await self._verify_decision_runtime(port)
             logger.info("llama.cpp server is ready")
         except Exception:
             await self.shutdown_server()
@@ -390,7 +394,29 @@ class LlamaCppBackend:
             "Start llama.cpp server with command:\n  > %s",
             " ".join(command),
         )
-        if max_context_length is not None:
+        from .model_manager import BLINK_REPO_IDS
+
+        if model_name in BLINK_REPO_IDS:
+            # Noncausal full-attention layers require one complete prompt.
+            # Oversized requests must fail rather than be split or truncated.
+            context = max_context_length or 8192
+            command.extend(
+                [
+                    "--ctx-size",
+                    str(context),
+                    "--batch-size",
+                    str(context),
+                    "--ubatch-size",
+                    str(context),
+                    "--parallel",
+                    "1",
+                    "--no-cache-prompt",
+                    "--cache-ram",
+                    "0",
+                    "--no-context-shift",
+                ],
+            )
+        elif max_context_length is not None:
             command.extend(["--ctx-size", str(max_context_length)])
         if resolved_mmproj_path is not None:
             command.extend(
@@ -416,6 +442,24 @@ class LlamaCppBackend:
             stderr=asyncio.subprocess.STDOUT,
             **process_kwargs,
         )
+
+    async def _verify_decision_runtime(self, port: int) -> None:
+        """Reject an older causal/chat-only binary before selecting Blink."""
+        async with httpx.AsyncClient(timeout=5, trust_env=False) as client:
+            response = await client.get(f"http://127.0.0.1:{port}/v1/models")
+            response.raise_for_status()
+            models = response.json().get("data", [])
+        if not any(
+            item.get("id") == self._server_model_name
+            and item.get("architecture", {}).get("output_modalities")
+            == ["decisions"]
+            for item in models
+        ):
+            raise RuntimeError(
+                "Blink requires a llama.cpp runtime with Blink SystemOne "
+                "and bidirectional prompt attention support. "
+                "See docs/local-blink.md for the compatible runtime.",
+            )
 
     async def shutdown_server(self) -> None:
         """Shutdown the llama.cpp server if it's running."""
@@ -505,10 +549,13 @@ class LlamaCppBackend:
         model_name: str,
         resolved_mmproj_path: Path | None,
     ) -> ModelInfo:
+        from .model_manager import BLINK_REPO_IDS
+
         supports_multimodal = resolved_mmproj_path is not None
         return ModelInfo(
             id=model_name,
             name=model_name,
+            model_type="decision" if model_name in BLINK_REPO_IDS else "chat",
             supports_multimodal=supports_multimodal,
             # TODO: add more detailed capability flags
             supports_image=supports_multimodal,

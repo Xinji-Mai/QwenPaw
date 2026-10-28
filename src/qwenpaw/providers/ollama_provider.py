@@ -10,10 +10,9 @@ from openai import AsyncOpenAI
 from qwenpaw.providers.capping_formatter import _CappingOpenAIFormatter
 from qwenpaw.providers.openai_provider import OpenAIProvider
 from qwenpaw.providers.provider import ModelConnectionResult
-from .local_decision_model import LocalDecisionProviderMixin
 
 
-class OllamaProvider(LocalDecisionProviderMixin, OpenAIProvider):
+class OllamaProvider(OpenAIProvider):
     """Provider implementation for Ollama local LLM hosting platform."""
 
     @staticmethod

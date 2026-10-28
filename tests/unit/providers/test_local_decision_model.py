@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""The local chat transport feeds native approval and ReMe consumers."""
+"""Native SystemOne decisions feed approval and ReMe consumers."""
+
 # pylint: disable=protected-access
 
 import asyncio
 import json
 from types import SimpleNamespace
 
-import httpx
+import httpx2 as httpx
 import pytest
-from openai import AsyncOpenAI
+from typesafe_sdk import AsyncTypeSafeClient
 from agentscope.classifier import BinaryQuestion
 
 from qwenpaw.config.config import AgentProfileConfig, ModelSlotConfig
@@ -18,10 +19,10 @@ from qwenpaw.providers.services.qwenpaw import QwenPawProvider
 from qwenpaw.security import decision_model
 
 
-@pytest.fixture(name="local", params=[QwenPawProvider, OllamaProvider])
-def local_fixture(request, monkeypatch):
+@pytest.fixture(name="local")
+def local_fixture(monkeypatch):
     # pylint: disable=too-many-statements
-    cls = request.param
+    cls = QwenPawProvider
     provider = cls(
         id="ollama" if cls is OllamaProvider else "qwenpaw-local",
         name="Local fixture",
@@ -40,29 +41,28 @@ def local_fixture(request, monkeypatch):
     def handler(req):
         # pylint: disable=too-many-branches
         state.requests.append(req)
-        assert req.url.path == "/v1/chat/completions"
+        assert req.url.path == "/v1/systemone"
+        assert "content-encoding" not in req.headers
         body = json.loads(req.content)
         assert body["model"] == "blink-fixture"
-        assert body["stream"] is False
-        assert body["temperature"] == 0
-        assert body["response_format"]["type"] == "json_schema"
-        evidence = json.loads(body["messages"][1]["content"])
+        assert set(body) == {"model", "state", "questions"}
         if state.mode == "http_error":
             return httpx.Response(503, json={"error": {"message": "Loading"}})
         if state.mode == "timeout":
             raise httpx.ReadTimeout("timeout", request=req)
         answers = {}
-        for name, question in evidence["questions"].items():
-            if question["type"] == "binary":
-                answers[name] = {"probability": 0.001}
+        for name, question in body["questions"].items():
+            if question["type"] == "noul":
+                answers[name] = {"type": "noul", "noul": 0.001}
             else:
                 options = list(question["criteria"])
                 selected = "routine" if "routine" in options else options[0]
                 probabilities = dict.fromkeys(options, 0.0)
                 probabilities[selected] = 1.0
                 answers[name] = {
+                    "type": "choice",
                     "choice": selected,
-                    "confidence": 0.99,
+                    "confidence": 1.0,
                     "probabilities": probabilities,
                 }
         if "impact" in answers:
@@ -77,58 +77,30 @@ def local_fixture(request, monkeypatch):
             if state.mode == "bad_choice":
                 answers["impact"]["choice"] = "risky"
             if state.mode == "risk":
-                answers["destructive"]["probability"] = 0.9
-            if state.mode == "boolean":
-                answers["destructive"]["probability"] = False
-            if state.mode == "nan":
-                answers["destructive"]["probability"] = float("nan")
-        content = json.dumps({"answers": answers})
+                answers["destructive"]["noul"] = 0.9
         if state.mode == "bad_json":
-            content = "I think it is safe"
-        if state.mode == "duplicate":
-            content = '{"answers":{},"answers":' + json.dumps(answers) + "}"
+            return httpx.Response(200, text="invalid response")
         return httpx.Response(
             200,
             json={
-                "id": "fixture",
-                "object": "chat.completion",
-                "created": 0,
                 "model": "blink-fixture",
-                "choices": [
-                    {
-                        "index": 0,
-                        "message": {"role": "assistant", "content": content},
-                        "finish_reason": (
-                            "length" if state.mode == "truncated" else "stop"
-                        ),
-                    },
-                ],
-                "usage": {
-                    "prompt_tokens": 40,
-                    "completion_tokens": 20,
-                    "total_tokens": 60,
-                },
+                "answers": answers,
+                "usage": {"input_tokens": 40, "output_tokens": 0},
             },
         )
 
-    def make_client(self, timeout=5):
-        base = (
-            self._openai_compatible_base_url()
-            if cls is OllamaProvider
-            else self.base_url
-        )
-        client = AsyncOpenAI(
-            api_key="fixture",
-            base_url=base,
-            timeout=timeout,
-            http_client=httpx.AsyncClient(
-                transport=httpx.MockTransport(handler),
-            ),
+    def make_client(**kwargs):
+        client = AsyncTypeSafeClient(
+            transport=httpx.MockTransport(handler),
+            **kwargs,
         )
         state.clients.append(client)
         return client
 
-    monkeypatch.setattr(cls, "_client", make_client)
+    monkeypatch.setattr(
+        "qwenpaw.providers.local_decision_model.AsyncTypeSafeClient",
+        make_client,
+    )
     slot = ModelSlotConfig(provider_id=provider.id, model="blink-fixture")
     manager = SimpleNamespace(
         default_models={"decision": slot},
@@ -150,11 +122,7 @@ def local_fixture(request, monkeypatch):
         ("missing_probability", True),
         ("bad_sum", True),
         ("bad_choice", True),
-        ("boolean", True),
-        ("nan", True),
         ("bad_json", True),
-        ("duplicate", True),
-        ("truncated", True),
         ("http_error", True),
         ("timeout", True),
     ],
@@ -175,7 +143,7 @@ async def test_native_approval_uses_local_selection_and_fails_closed(
     assert result.needs_approval is needs_approval
     assert len(local.requests) == 1
     assert "PRIVATE_VALUE_NOT_SENT" not in local.requests[0].content.decode()
-    assert all(client.is_closed() for client in local.clients)
+    assert all(client._http_client.is_closed for client in local.clients)
 
 
 @pytest.mark.asyncio
@@ -200,7 +168,7 @@ async def test_factory_and_reme_keep_native_answer_interface(local):
     finally:
         await component.close()
         await model.client.aclose()
-    assert all(client.is_closed() for client in local.clients)
+    assert all(client._http_client.is_closed for client in local.clients)
 
 
 @pytest.mark.asyncio
@@ -229,4 +197,4 @@ async def test_cancelled_request_closes_client(local, monkeypatch):
             state="x",
             questions={"q": BinaryQuestion(instructions="Relevant?")},
         )
-    assert all(client.is_closed() for client in local.clients)
+    assert all(client._http_client.is_closed for client in local.clients)

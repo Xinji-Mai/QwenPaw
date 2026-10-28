@@ -293,6 +293,8 @@ def test_get_model_dir_preserves_repo_id_path() -> None:
     [
         ("Qwen/Qwen3-0.6B-GGUF", "chat", "Qwen/Qwen3-0.6B-GGUF"),
         ("agentscope-ai/Blink-27B", "decision", "Blink-27B"),
+        ("agentscope-ai/Blink-4B-Q8_0", "decision", "Blink-4B-Q8_0"),
+        ("agentscope-ai/Blink-27B-Q4_K_M", "decision", "Blink-27B-Q4_K_M"),
     ],
 )
 def test_list_and_remove_downloaded_models_with_repo_id_layout(
