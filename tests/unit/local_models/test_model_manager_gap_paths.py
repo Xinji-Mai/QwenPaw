@@ -383,6 +383,8 @@ class TestRecommendedModels:
             "AgentScope/QwenPaw-Flash-9B-Q4_K_M": DownloadSource.MODELSCOPE,
             "AgentScope/QwenPaw-Flash-9B-Q8_0": DownloadSource.MODELSCOPE,
         }
+        if memory_gb >= 24:
+            expected["agentscope-ai/Blink-27B"] = DownloadSource.HUGGINGFACE
         for size in ("27B", "35B-A3B"):
             for quantization in large_quantizations:
                 model_id = f"agentscope-ai/QwenPaw-Flash-{size}-{quantization}"

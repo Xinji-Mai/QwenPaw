@@ -42,13 +42,30 @@ export const LocalModelRow = memo(function LocalModelRow({
   const isRunning = currentRunningModelName === model.id;
   const isStarting = startingModelName === model.id;
   const isDeleting = deletingModelName === model.id;
+  const isDecisionModel = model.model_type === "decision";
 
   return (
     <div className={styles.modelListItem}>
       <div className={styles.modelListItemInfo}>
         <span className={styles.modelListItemName}>{model.name}</span>
+        {isDecisionModel && (
+          <span className={styles.customModelHint}>
+            {t("models.localDecisionPurpose")}
+          </span>
+        )}
         <span className={styles.modelListItemId}>
-          {model.id} · {prettyBytes(model.size_bytes)}
+          {isDecisionModel && model.source === "huggingface" ? (
+            <a
+              href={`https://huggingface.co/${model.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {model.id}
+            </a>
+          ) : (
+            model.id
+          )}
+          {model.size_bytes != null && ` · ${prettyBytes(model.size_bytes)}`}
         </span>
       </div>
       <div className={styles.modelListItemActions}>

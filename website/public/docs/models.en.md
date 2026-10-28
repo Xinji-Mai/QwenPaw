@@ -46,6 +46,34 @@ When you do not need to use a model temporarily, you can click **Stop** to stop 
 
 QwenPaw Local will automatically record the model's running state. If you close the QwenPaw process while a QwenPaw Local model is running, it will attempt to restart the last used model the next time you open QwenPaw, so you do not need to start the model manually each time.
 
+### Local decision models
+
+Blink-27B uses the same download and runtime controls as local chat models. Its
+Hugging Face repository is
+[`agentscope-ai/Blink-27B`](https://huggingface.co/agentscope-ai/Blink-27B); the
+llama.cpp runtime requires compatible GGUF weights.
+
+1. Open **Models → QwenPaw Local → Models**, download **Blink-27B**, and click
+   **Start**. If it is absent from the recommended list, use the custom download
+   field with the same repository ID and Hugging Face as the source.
+2. Confirm **QwenPaw Local / Blink-27B** under **Default models → Decision model**.
+   Starting this catalog entry sets the decision default, independently of the
+   chat model selection. The embedded runtime serves one local model at a time.
+3. For automatic review, enable **Use decision model** in the chat model menu's
+   **Advanced options**, then select **Decision Model Mode** in the approval menu.
+   The agent's default mode is also configurable under
+   **Configuration → Execution → Tool Approval Mode**.
+4. For context compaction, open **Configuration → Context budget**, enable
+   **Enable Context Compaction**, and turn on **Decision model compaction**.
+   This switch is independent of the chat decision toggle.
+
+Starting a model does not enable review or compaction. Compatible models imported
+into Ollama can use the same workflow after being registered with the
+**decision** model type and selected as the decision model. The local adapter
+requires structured JSON responses for binary and choice questions. Its
+probabilities are model-reported estimates, not calibrated Jev scores. Invalid
+responses retain the native human-approval or normal-compaction fallback.
+
 ## Ollama Configuration
 
 Before using Ollama, you need to install the latest version of [Ollama](https://ollama.com/download) on your machine, download at least one model, and set the Context Length to at least 32k on the settings page.

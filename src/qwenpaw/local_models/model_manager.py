@@ -34,6 +34,7 @@ from ..providers.provider import ModelInfo
 from ..constant import DEFAULT_LOCAL_PROVIDER_DIR
 
 logger = logging.getLogger(__name__)
+BLINK_REPO_ID = "agentscope-ai/Blink-27B"
 
 
 class DownloadSource(str, Enum):
@@ -46,7 +47,7 @@ class DownloadSource(str, Enum):
 class LocalModelInfo(ModelInfo):
     """Metadata for a local model"""
 
-    size_bytes: int = Field(
+    size_bytes: int | None = Field(
         ...,
         description="Model size in bytes, if known",
     )
@@ -133,6 +134,13 @@ class ModelManager:
             models.extend(
                 [
                     LocalModelInfo(
+                        id=BLINK_REPO_ID,
+                        name="Blink-27B",
+                        model_type="decision",
+                        size_bytes=None,
+                        source=DownloadSource.HUGGINGFACE,
+                    ),
+                    LocalModelInfo(
                         id="agentscope-ai/QwenPaw-Flash-27B-Q4_K_M",
                         name="QwenPaw-Flash-27B-Q4_K_M",
                         size_bytes=16547398880,
@@ -193,10 +201,17 @@ class ModelManager:
         for entry in self._iter_downloaded_model_dirs():
             repo_id = self._infer_repo_id_from_path(entry)
             size_bytes = self._calculate_downloaded_size(entry)
+            is_blink = repo_id == BLINK_REPO_ID
             models.append(
                 LocalModelInfo(
                     id=repo_id,
-                    name=repo_id,
+                    name="Blink-27B" if is_blink else repo_id,
+                    model_type="decision" if is_blink else "chat",
+                    source=(
+                        DownloadSource.HUGGINGFACE
+                        if is_blink
+                        else DownloadSource.AUTO
+                    ),
                     size_bytes=size_bytes,
                     downloaded=True,
                 ),

@@ -10,9 +10,10 @@ from openai import AsyncOpenAI
 from qwenpaw.providers.capping_formatter import _CappingOpenAIFormatter
 from qwenpaw.providers.openai_provider import OpenAIProvider
 from qwenpaw.providers.provider import ModelConnectionResult
+from .local_decision_model import LocalDecisionProviderMixin
 
 
-class OllamaProvider(OpenAIProvider):
+class OllamaProvider(LocalDecisionProviderMixin, OpenAIProvider):
     """Provider implementation for Ollama local LLM hosting platform."""
 
     @staticmethod
@@ -34,7 +35,7 @@ class OllamaProvider(OpenAIProvider):
 
     def model_post_init(self, __context: Any) -> None:
         if not self.base_url:  # type: ignore
-            self.base_url = (
+            self.base_url: str = (
                 os.environ.get("OLLAMA_HOST") or "http://127.0.0.1:11434"
             )
         self.base_url = self._normalize_base_url(self.base_url)

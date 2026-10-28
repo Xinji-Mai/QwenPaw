@@ -756,6 +756,7 @@ export function LocalModelManageModal({
         try {
           await api.startLocalServer({
             model_id: model.id,
+            model_type: model.model_type ?? "chat",
           });
           await refreshStatus();
           onSaved();

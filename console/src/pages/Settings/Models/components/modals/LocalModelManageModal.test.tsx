@@ -360,6 +360,25 @@ describe("LocalModelManageModal", () => {
   });
 
   describe("模型列表展示", () => {
+    it.each(["chat", "decision"] as const)(
+      "starts a downloaded %s model with its declared type",
+      async (modelType) => {
+        const model = { ...mockModels[0], model_type: modelType };
+        vi.mocked(api.listRecommendedLocalModels).mockResolvedValue([model]);
+        renderModal();
+        await userEvent.click(
+          await screen.findByText("models.localStartServer"),
+        );
+        await waitFor(() => {
+          expect(api.startLocalServer).toHaveBeenCalledWith({
+            model_id: model.id,
+            model_type: modelType,
+          });
+        });
+        expect(api.startLocalModelDownload).not.toHaveBeenCalled();
+      },
+    );
+
     it("显示推荐的本地模型列表", async () => {
       renderModal();
 

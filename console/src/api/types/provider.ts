@@ -240,7 +240,8 @@ export interface LocalModelConfigRequest {
 export interface LocalModelInfo {
   id: string;
   name: string;
-  size_bytes: number;
+  model_type?: ModelType;
+  size_bytes: number | null;
   downloaded: boolean;
   source: LocalDownloadSource;
 }
@@ -285,6 +286,7 @@ export interface LocalActionResponse {
 
 export interface StartLocalServerRequest {
   model_id: string;
+  model_type?: ModelType;
 }
 
 /* ---- Test Connection ---- */
