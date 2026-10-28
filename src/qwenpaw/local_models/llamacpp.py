@@ -398,8 +398,10 @@ class LlamaCppBackend:
 
         if model_name in BLINK_REPO_IDS:
             # Noncausal full-attention layers require one complete prompt.
-            # Oversized requests must fail rather than be split or truncated.
-            context = max_context_length or 8192
+            # Keep the initial full-attention allocation within the tested
+            # 8K budget, even when the shared chat window defaults to 64K.
+            # Oversized requests fail rather than be split or truncated.
+            context = min(max_context_length or 8192, 8192)
             command.extend(
                 [
                     "--ctx-size",

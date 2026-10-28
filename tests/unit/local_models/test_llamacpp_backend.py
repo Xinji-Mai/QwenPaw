@@ -49,9 +49,12 @@ class _FakeServerProcess:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("size", ["4B", "9B", "27B"])
 @pytest.mark.parametrize("suffix", ["", "-Q8_0", "-Q4_K_M"])
+@pytest.mark.parametrize("requested,expected", [(4096, 4096), (65536, 8192)])
 async def test_blink_requires_whole_prompt_without_cache(
     size,
     suffix,
+    requested,
+    expected,
     monkeypatch,
     tmp_path,
 ):
@@ -68,12 +71,12 @@ async def test_blink_requires_whole_prompt_without_cache(
         None,
         f"agentscope-ai/Blink-{size}{suffix}",
         9001,
-        4096,
+        requested,
         {},
     )
     command = calls[0]
     for option in ("--ctx-size", "--batch-size", "--ubatch-size"):
-        assert command[command.index(option) + 1] == "4096"
+        assert command[command.index(option) + 1] == str(expected)
     assert command[command.index("--parallel") + 1] == "1"
     assert "--no-cache-prompt" in command
     assert "--no-context-shift" in command

@@ -42,7 +42,7 @@ The GGUF carries `qwen35.attention.causal=false`, decision type `blink`, the tok
 
 The runtime reads the logits of the single-token candidate labels directly. Softmax over those candidate logits at temperature 1 gives the candidate-normalized probabilities, equivalently renormalizing their token log probabilities. It generates no answer tokens. The existing SystemOne response supplies binary probabilities, choice distributions and confidence, or ordered scores. These distributions are not empirical calibration guarantees; task-quality and threshold calibration are separate evaluations.
 
-QwenPaw uses one slot, equal context/batch/microbatch limits, no prompt cache, and no context shifting for Blink. Requests that do not fit the complete-prompt budget fail explicitly. Reusing a causal prefix cache, splitting the prompt into causal chunks, or silently truncating it changes the computation.
+QwenPaw uses one slot, equal context/batch/microbatch limits, no prompt cache, and no context shifting for Blink. This initial integration caps each complete question prompt at 8,192 tokens, including any repeated layout, independently of the larger shared chat-window setting. Requests that do not fit the complete-prompt budget fail explicitly. Reusing a causal prefix cache, splitting the prompt into causal chunks, or silently truncating it changes the computation.
 
 ## Checkpoint conversion and verification
 
