@@ -35,12 +35,12 @@ from ..providers.provider import ModelInfo
 from ..constant import DEFAULT_LOCAL_PROVIDER_DIR
 
 logger = logging.getLogger(__name__)
-BLINK_REPO_IDS = {
-    f"agentscope-ai/Blink-{size}B{suffix}"
+PICCOLO_REPO_IDS = {
+    f"agentscope-ai/Piccolo-{size}B{suffix}"
     for size in (4, 9, 27)
     for suffix in ("", "-Q8_0", "-Q4_K_M")
 }
-BLINK_DOWNLOAD_PATTERNS = [
+PICCOLO_DOWNLOAD_PATTERNS = [
     "*.gguf",
     "LICENSE",
     "README.md",
@@ -180,8 +180,8 @@ class ModelManager:
             if memory_gb >= minimum_memory:
                 models.append(
                     LocalModelInfo(
-                        id=f"agentscope-ai/Blink-{size}B-Q8_0",
-                        name=f"Blink-{size}B-Q8_0",
+                        id=f"agentscope-ai/Piccolo-{size}B-Q8_0",
+                        name=f"Piccolo-{size}B-Q8_0",
                         model_type="decision",
                         size_bytes=None,
                         source=DownloadSource.HUGGINGFACE,
@@ -217,17 +217,17 @@ class ModelManager:
         for entry in self._iter_downloaded_model_dirs():
             repo_id = self._infer_repo_id_from_path(entry)
             size_bytes = self._calculate_downloaded_size(entry)
-            is_blink = repo_id in BLINK_REPO_IDS
+            is_piccolo = repo_id in PICCOLO_REPO_IDS
             models.append(
                 LocalModelInfo(
                     id=repo_id,
                     name=repo_id.rsplit("/", maxsplit=1)[-1]
-                    if is_blink
+                    if is_piccolo
                     else repo_id,
-                    model_type="decision" if is_blink else "chat",
+                    model_type="decision" if is_piccolo else "chat",
                     source=(
                         DownloadSource.HUGGINGFACE
-                        if is_blink
+                        if is_piccolo
                         else DownloadSource.AUTO
                     ),
                     size_bytes=size_bytes,
@@ -454,9 +454,9 @@ class ModelManager:
             ) from exc
 
         kwargs = {}
-        if repo_id in BLINK_REPO_IDS:
+        if repo_id in PICCOLO_REPO_IDS:
             # Fetch only GGUF/runtime metadata, including for legacy base IDs.
-            kwargs["allow_patterns"] = BLINK_DOWNLOAD_PATTERNS
+            kwargs["allow_patterns"] = PICCOLO_DOWNLOAD_PATTERNS
         return snapshot_download(
             repo_id=repo_id,
             local_dir=str(local_dir),
@@ -516,9 +516,9 @@ class ModelManager:
                 continue
             if name.startswith("."):
                 continue
-            if repo_id in BLINK_REPO_IDS and not any(
+            if repo_id in PICCOLO_REPO_IDS and not any(
                 fnmatch.fnmatch(name, pattern)
-                for pattern in BLINK_DOWNLOAD_PATTERNS
+                for pattern in PICCOLO_DOWNLOAD_PATTERNS
             ):
                 continue
             total += size

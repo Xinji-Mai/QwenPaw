@@ -28,14 +28,14 @@ async def test_start_restore_and_stop_local_decision_preserves_chat(
     chat = ModelSlotConfig(provider_id="openai", model="chat-fixture")
     manager.active_model = chat
     manager.save_active_model(chat)
-    model_id = "fixture/blink-gguf"
+    model_id = "fixture/piccolo-gguf"
 
     async def setup(*_args, **_kwargs):
         return LlamaCppServerSetupResult(
             port=9001,
             model_info=ModelInfo(
                 id=model_id,
-                name="Blink fixture",
+                name="Piccolo fixture",
                 model_type=runtime_type,
             ),
         )

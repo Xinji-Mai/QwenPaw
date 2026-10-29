@@ -62,7 +62,7 @@ class TestEstimateHuggingfaceSize:
         self._install_fake_api(monkeypatch, api)
         assert manager._estimate_huggingface_size("org/repo") == 150
 
-    def test_blink_download_and_size_exclude_full_checkpoint(
+    def test_piccolo_download_and_size_exclude_full_checkpoint(
         self,
         manager,
         monkeypatch,
@@ -72,7 +72,7 @@ class TestEstimateHuggingfaceSize:
         import huggingface_hub
 
         files = {
-            "Blink-4B-Q8_0.gguf": 100,
+            "Piccolo-4B-Q8_0.gguf": 100,
             "README.md": 10,
             "LICENSE": 10,
             "decision-inference.json": 10,
@@ -88,13 +88,13 @@ class TestEstimateHuggingfaceSize:
         )
         self._install_fake_api(monkeypatch, api)
         assert (
-            manager._estimate_huggingface_size("agentscope-ai/Blink-4B-Q8_0")
+            manager._estimate_huggingface_size("agentscope-ai/Piccolo-4B-Q8_0")
             == 130
         )
         download = MagicMock(return_value=str(tmp_path))
         monkeypatch.setattr(huggingface_hub, "snapshot_download", download)
         manager._download_from_huggingface(
-            "agentscope-ai/Blink-4B-Q8_0",
+            "agentscope-ai/Piccolo-4B-Q8_0",
             tmp_path,
         )
         patterns = download.call_args.kwargs["allow_patterns"]
@@ -104,7 +104,7 @@ class TestEstimateHuggingfaceSize:
             if any(fnmatch.fnmatch(name, pat) for pat in patterns)
         }
         assert selected == {
-            "Blink-4B-Q8_0.gguf",
+            "Piccolo-4B-Q8_0.gguf",
             "README.md",
             "LICENSE",
             "decision-inference.json",
@@ -404,7 +404,7 @@ class TestRecommendedModels:
         assert models
         assert all("4B" in m.id for m in models if m.model_type == "chat")
         assert {m.id for m in models if m.model_type == "decision"} == {
-            "agentscope-ai/Blink-4B-Q8_0",
+            "agentscope-ai/Piccolo-4B-Q8_0",
         }
 
     @pytest.mark.parametrize(
@@ -441,7 +441,7 @@ class TestRecommendedModels:
         )
         for size, minimum in ((4, 16), (9, 24), (27, 48)):
             if memory_gb >= minimum:
-                model_id = f"agentscope-ai/Blink-{size}B-Q8_0"
+                model_id = f"agentscope-ai/Piccolo-{size}B-Q8_0"
                 expected[model_id] = DownloadSource.HUGGINGFACE
         for size in ("27B", "35B-A3B"):
             for quantization in large_quantizations:

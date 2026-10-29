@@ -323,8 +323,8 @@ describe("LocalModelManageModal", () => {
   it("separates agent and decision models while preserving their controls", async () => {
     const decision = {
       ...mockModels[0],
-      id: "agentscope-ai/Blink-4B-Q8_0",
-      name: "Blink-4B-Q8_0",
+      id: "agentscope-ai/Piccolo-4B-Q8_0",
+      name: "Piccolo-4B-Q8_0",
       model_type: "decision" as const,
       source: "huggingface" as const,
     };

@@ -295,9 +295,9 @@ class LlamaCppBackend:
         try:
             logger.info("Waiting for llama.cpp server to become ready...")
             await self.server_ready()
-            from .model_manager import BLINK_REPO_IDS
+            from .model_manager import PICCOLO_REPO_IDS
 
-            if model_name in BLINK_REPO_IDS:
+            if model_name in PICCOLO_REPO_IDS:
                 await self._verify_decision_runtime(port)
             logger.info("llama.cpp server is ready")
         except Exception:
@@ -394,9 +394,9 @@ class LlamaCppBackend:
             "Start llama.cpp server with command:\n  > %s",
             " ".join(command),
         )
-        from .model_manager import BLINK_REPO_IDS
+        from .model_manager import PICCOLO_REPO_IDS
 
-        if model_name in BLINK_REPO_IDS:
+        if model_name in PICCOLO_REPO_IDS:
             # Noncausal full-attention layers require one complete prompt.
             # Keep the initial full-attention allocation within the tested
             # 8K budget, even when the shared chat window defaults to 64K.
@@ -446,7 +446,7 @@ class LlamaCppBackend:
         )
 
     async def _verify_decision_runtime(self, port: int) -> None:
-        """Reject an older causal/chat-only binary before selecting Blink."""
+        """Reject an older causal/chat-only binary before selecting Piccolo."""
         async with httpx.AsyncClient(timeout=5, trust_env=False) as client:
             response = await client.get(f"http://127.0.0.1:{port}/v1/models")
             response.raise_for_status()
@@ -458,9 +458,9 @@ class LlamaCppBackend:
             for item in models
         ):
             raise RuntimeError(
-                "Blink requires a llama.cpp runtime with Blink SystemOne "
+                "Piccolo requires a llama.cpp runtime with Piccolo SystemOne "
                 "and bidirectional prompt attention support. "
-                "See docs/local-blink.md for the compatible runtime.",
+                "See docs/local-piccolo.md for the compatible runtime.",
             )
 
     async def shutdown_server(self) -> None:
@@ -551,13 +551,15 @@ class LlamaCppBackend:
         model_name: str,
         resolved_mmproj_path: Path | None,
     ) -> ModelInfo:
-        from .model_manager import BLINK_REPO_IDS
+        from .model_manager import PICCOLO_REPO_IDS
 
         supports_multimodal = resolved_mmproj_path is not None
         return ModelInfo(
             id=model_name,
             name=model_name,
-            model_type="decision" if model_name in BLINK_REPO_IDS else "chat",
+            model_type="decision"
+            if model_name in PICCOLO_REPO_IDS
+            else "chat",
             supports_multimodal=supports_multimodal,
             # TODO: add more detailed capability flags
             supports_image=supports_multimodal,

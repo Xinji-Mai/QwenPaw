@@ -30,8 +30,8 @@ def local_fixture(monkeypatch):
         + ("" if cls is OllamaProvider else "/v1"),
         models=[
             {
-                "id": "blink-fixture",
-                "name": "Blink fixture",
+                "id": "piccolo-fixture",
+                "name": "Piccolo fixture",
                 "model_type": "decision",
             },
         ],
@@ -44,7 +44,7 @@ def local_fixture(monkeypatch):
         assert req.url.path == "/v1/systemone"
         assert "content-encoding" not in req.headers
         body = json.loads(req.content)
-        assert body["model"] == "blink-fixture"
+        assert body["model"] == "piccolo-fixture"
         assert set(body) == {"model", "state", "questions"}
         if state.mode == "http_error":
             return httpx.Response(503, json={"error": {"message": "Loading"}})
@@ -83,7 +83,7 @@ def local_fixture(monkeypatch):
         return httpx.Response(
             200,
             json={
-                "model": "blink-fixture",
+                "model": "piccolo-fixture",
                 "answers": answers,
                 "usage": {"input_tokens": 40, "output_tokens": 0},
             },
@@ -101,7 +101,7 @@ def local_fixture(monkeypatch):
         "qwenpaw.providers.local_decision_model.AsyncTypeSafeClient",
         make_client,
     )
-    slot = ModelSlotConfig(provider_id=provider.id, model="blink-fixture")
+    slot = ModelSlotConfig(provider_id=provider.id, model="piccolo-fixture")
     manager = SimpleNamespace(
         default_models={"decision": slot},
         get_provider=lambda _: provider,
@@ -193,7 +193,7 @@ async def test_cancelled_request_closes_client(local, monkeypatch):
     monkeypatch.setattr(LocalDecisionModel, "__call__", cancel)
     with pytest.raises(asyncio.CancelledError):
         await local.provider.evaluate(
-            model="blink-fixture",
+            model="piccolo-fixture",
             state="x",
             questions={"q": BinaryQuestion(instructions="Relevant?")},
         )

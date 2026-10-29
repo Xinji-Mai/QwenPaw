@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Native Jev decisions from a Blink-capable local llama.cpp runtime.
+"""Native Jev decisions from a Piccolo-capable local llama.cpp runtime.
 
 The runtime applies the checkpoint's bidirectional prompt attention and reads
 candidate token logits. AgentScope retains its native request/answer mapping.

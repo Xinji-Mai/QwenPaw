@@ -50,7 +50,7 @@ class _FakeServerProcess:
 @pytest.mark.parametrize("size", ["4B", "9B", "27B"])
 @pytest.mark.parametrize("suffix", ["", "-Q8_0", "-Q4_K_M"])
 @pytest.mark.parametrize("requested,expected", [(4096, 4096), (65536, 8192)])
-async def test_blink_requires_whole_prompt_without_cache(
+async def test_piccolo_requires_whole_prompt_without_cache(
     size,
     suffix,
     requested,
@@ -69,7 +69,7 @@ async def test_blink_requires_whole_prompt_without_cache(
     await backend._create_server_process(
         tmp_path / "model.gguf",
         None,
-        f"agentscope-ai/Blink-{size}{suffix}",
+        f"agentscope-ai/Piccolo-{size}{suffix}",
         9001,
         requested,
         {},
@@ -84,9 +84,9 @@ async def test_blink_requires_whole_prompt_without_cache(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("modalities", [["decisions"], ["text"], []])
-async def test_blink_runtime_capability_gate(modalities, monkeypatch):
+async def test_piccolo_runtime_capability_gate(modalities, monkeypatch):
     backend = _build_downloader(monkeypatch)
-    backend._server_model_name = "agentscope-ai/Blink-4B-Q8_0"
+    backend._server_model_name = "agentscope-ai/Piccolo-4B-Q8_0"
     original_client = httpx.AsyncClient
 
     def handler(request):
