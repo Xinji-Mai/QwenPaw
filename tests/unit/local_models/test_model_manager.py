@@ -294,6 +294,9 @@ def test_get_model_dir_preserves_repo_id_path() -> None:
         ("Qwen/Qwen3-0.6B-GGUF", "chat", "Qwen/Qwen3-0.6B-GGUF"),
         ("agentscope-ai/Piccolo-27B", "decision", "Piccolo-27B"),
         ("agentscope-ai/Piccolo-4B-Q8_0", "decision", "Piccolo-4B-Q8_0"),
+        ("agentscope-ai/Piccolo-4B-BF16", "decision", "Piccolo-4B-BF16"),
+        ("agentscope-ai/Piccolo-9B-BF16", "decision", "Piccolo-9B-BF16"),
+        ("agentscope-ai/Piccolo-27B-BF16", "decision", "Piccolo-27B-BF16"),
         ("agentscope-ai/Piccolo-27B-Q4_K_M", "decision", "Piccolo-27B-Q4_K_M"),
     ],
 )

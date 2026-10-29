@@ -1,6 +1,6 @@
 # Local Piccolo decisions
 
-Piccolo uses QwenPaw's native Jev decision interface for tool review and ReMe context compaction. The model repositories are `agentscope-ai/Piccolo-4B`, `agentscope-ai/Piccolo-9B`, and `agentscope-ai/Piccolo-27B` on Hugging Face. Their model cards and weights use Apache-2.0, matching the QwenPaw-Flash release convention. GGUF variants live in separate repositories with `-Q8_0` or `-Q4_K_M` suffixes. The current catalog selects Q8_0, for example `agentscope-ai/Piccolo-27B-Q8_0`. Q4_K_M repositories are also published; their model cards record the expanded synthetic numerical regression results and limitations. The built-in recommendations continue to use Q8_0.
+Piccolo uses QwenPaw's native Jev decision interface for tool review and ReMe context compaction. The model repositories are `agentscope-ai/Piccolo-4B`, `agentscope-ai/Piccolo-9B`, and `agentscope-ai/Piccolo-27B` on Hugging Face. Their model cards and weights use Apache-2.0, matching the QwenPaw-Flash release convention. GGUF variants use separate `-BF16`, `-Q8_0`, and `-Q4_K_M` repositories. Built-in recommendations include BF16 and Q8_0 according to machine memory. For example, `agentscope-ai/Piccolo-9B-BF16` downloads the unquantized BF16 GGUF, while `agentscope-ai/Piccolo-9B-Q8_0` downloads the smaller Q8 variant. Q4_K_M model cards record the expanded synthetic numerical regression results and limitations.
 
 ## Download and enable
 
@@ -55,7 +55,17 @@ python convert_hf_to_gguf.py /path/to/Piccolo-4B --no-mtp --outtype bf16 --outfi
 build/bin/llama-quantize Piccolo-4B-BF16.gguf Piccolo-4B-Q8_0.gguf Q8_0
 ```
 
-Q8_0 remains the catalog recommendation. Q4_K_M is also published after an expanded synthetic regression of 265 requests / 556 judgments per model size; its measured probability differences and limitations are disclosed in each Q4 model card. These checks are not a benchmark or risk calibration. Catalog recommendations reserve more memory for these Q8 artifacts (4B: 16 GB, 9B: 24 GB, 27B: 48 GB); context length and the platform still affect actual usage.
+The catalog includes both BF16 and Q8_0. Its display thresholds leave room for full-prompt attention and runtime buffers:
+
+| Model size | Q8_0 minimum memory | BF16 minimum memory | BF16 download        |
+| ---------- | ------------------- | ------------------- | -------------------- |
+| 4B         | 16 GB               | 24 GB               | 8.42 GB / 2 shards   |
+| 9B         | 24 GB               | 32 GB               | 17.92 GB / 4 shards  |
+| 27B        | 48 GB               | 80 GB               | 53.81 GB / 12 shards |
+
+These thresholds are catalog policy rather than measured peak-memory guarantees; context length and platform affect actual usage. Download every standard GGUF shard into the same model directory. BF16 keeps the checkpoint's main weight precision, with some normalization and recurrent-state tensors stored as F32 by the converter. It uses the same native decision slot, runtime capability check and review/compaction switches as Q8_0.
+
+Q4_K_M is also published after an expanded synthetic regression of 265 requests / 556 judgments per model size; its measured probability differences and limitations are disclosed in each Q4 model card. These checks are not a benchmark or risk calibration.
 
 All text backbone layers and the output projection are retained. MTP and the vision encoder are not used by this text decision path; the original Hugging Face checkpoint remains complete. Verify the BF16 conversion against the full Transformers reference first, then measure quantization error separately. The model repository includes the reference inference script and third-party license notice.
 

@@ -62,8 +62,10 @@ class TestEstimateHuggingfaceSize:
         self._install_fake_api(monkeypatch, api)
         assert manager._estimate_huggingface_size("org/repo") == 150
 
+    @pytest.mark.parametrize("suffix", ["Q8_0", "BF16"])
     def test_piccolo_download_and_size_exclude_full_checkpoint(
         self,
+        suffix,
         manager,
         monkeypatch,
         tmp_path,
@@ -72,7 +74,7 @@ class TestEstimateHuggingfaceSize:
         import huggingface_hub
 
         files = {
-            "Piccolo-4B-Q8_0.gguf": 100,
+            f"Piccolo-4B-{suffix}.gguf": 100,
             "README.md": 10,
             "LICENSE": 10,
             "decision-inference.json": 10,
@@ -88,13 +90,15 @@ class TestEstimateHuggingfaceSize:
         )
         self._install_fake_api(monkeypatch, api)
         assert (
-            manager._estimate_huggingface_size("agentscope-ai/Piccolo-4B-Q8_0")
+            manager._estimate_huggingface_size(
+                f"agentscope-ai/Piccolo-4B-{suffix}",
+            )
             == 130
         )
         download = MagicMock(return_value=str(tmp_path))
         monkeypatch.setattr(huggingface_hub, "snapshot_download", download)
         manager._download_from_huggingface(
-            "agentscope-ai/Piccolo-4B-Q8_0",
+            f"agentscope-ai/Piccolo-4B-{suffix}",
             tmp_path,
         )
         patterns = download.call_args.kwargs["allow_patterns"]
@@ -104,7 +108,7 @@ class TestEstimateHuggingfaceSize:
             if any(fnmatch.fnmatch(name, pat) for pat in patterns)
         }
         assert selected == {
-            "Piccolo-4B-Q8_0.gguf",
+            f"Piccolo-4B-{suffix}.gguf",
             "README.md",
             "LICENSE",
             "decision-inference.json",
@@ -408,6 +412,50 @@ class TestRecommendedModels:
         }
 
     @pytest.mark.parametrize(
+        ("memory_gb", "expected_sizes"),
+        [
+            (23.99, ()),
+            (24, (4,)),
+            (31.99, (4,)),
+            (32, (4, 9)),
+            (79.99, (4, 9)),
+            (80, (4, 9, 27)),
+        ],
+    )
+    def test_bf16_recommendations_preserve_decision_identity(
+        self,
+        manager,
+        monkeypatch,
+        memory_gb,
+        expected_sizes,
+    ):
+        monkeypatch.setattr(
+            manager,
+            "_detect_available_memory_gb",
+            lambda: memory_gb,
+        )
+        downloaded = "agentscope-ai/Piccolo-4B-BF16"
+        monkeypatch.setattr(
+            manager,
+            "is_downloaded",
+            lambda repo: repo == downloaded,
+        )
+        models = [
+            m
+            for m in manager.get_recommended_models()
+            if m.id.endswith("-BF16")
+        ]
+        assert {m.id for m in models} == {
+            f"agentscope-ai/Piccolo-{size}B-BF16" for size in expected_sizes
+        }
+        for model in models:
+            assert model.model_type == "decision"
+            assert model.source == DownloadSource.HUGGINGFACE
+            assert model.size_bytes is not None
+            assert model.size_bytes > 0
+            assert model.downloaded == (model.id == downloaded)
+
+    @pytest.mark.parametrize(
         ("memory_gb", "large_quantizations"),
         [
             (16.01, ()),
@@ -417,6 +465,9 @@ class TestRecommendedModels:
             (47.99, ("Q4_K_M",)),
             (48, ("Q4_K_M", "Q8_0")),
             (64, ("Q4_K_M", "Q8_0")),
+            (79.99, ("Q4_K_M", "Q8_0")),
+            (80, ("Q4_K_M", "Q8_0")),
+            (96, ("Q4_K_M", "Q8_0")),
         ],
     )
     def test_large_models_respect_memory_thresholds(
@@ -442,6 +493,10 @@ class TestRecommendedModels:
         for size, minimum in ((4, 16), (9, 24), (27, 48)):
             if memory_gb >= minimum:
                 model_id = f"agentscope-ai/Piccolo-{size}B-Q8_0"
+                expected[model_id] = DownloadSource.HUGGINGFACE
+        for size, minimum in ((4, 24), (9, 32), (27, 80)):
+            if memory_gb >= minimum:
+                model_id = f"agentscope-ai/Piccolo-{size}B-BF16"
                 expected[model_id] = DownloadSource.HUGGINGFACE
         for size in ("27B", "35B-A3B"):
             for quantization in large_quantizations:

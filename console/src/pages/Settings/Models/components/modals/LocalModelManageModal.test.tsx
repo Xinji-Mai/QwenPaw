@@ -320,42 +320,47 @@ describe("LocalModelManageModal", () => {
     setupDefaultMocks();
   });
 
-  it("separates agent and decision models while preserving their controls", async () => {
-    const decision = {
-      ...mockModels[0],
-      id: "agentscope-ai/Piccolo-4B-Q8_0",
-      name: "Piccolo-4B-Q8_0",
-      model_type: "decision" as const,
-      source: "huggingface" as const,
-    };
-    vi.mocked(api.listRecommendedLocalModels).mockResolvedValue([
-      ...mockModels,
-      decision,
-    ]);
-    renderModal();
-    const agents = await screen.findByRole("region", {
-      name: "models.localChatModelsTitle",
-    });
-    const decisions = await screen.findByRole("region", {
-      name: "models.localDecisionModelsTitle",
-    });
-    await waitFor(() => {
-      expect(within(agents).getByText(mockModels[0].name)).toBeInTheDocument();
-      expect(within(decisions).getByText(decision.name)).toBeInTheDocument();
-    });
-    expect(within(agents).queryByText(decision.name)).not.toBeInTheDocument();
-    expect(within(decisions).queryByRole("link")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("models.localDecisionPurpose"),
-    ).not.toBeInTheDocument();
-    await userEvent.click(
-      within(decisions).getByText("models.localStartServer"),
-    );
-    expect(api.startLocalServer).toHaveBeenCalledWith({
-      model_id: decision.id,
-      model_type: "decision",
-    });
-  });
+  it.each(["Q8_0", "BF16"])(
+    "keeps %s decision models in their native controls",
+    async (precision) => {
+      const decision = {
+        ...mockModels[0],
+        id: `agentscope-ai/Piccolo-4B-${precision}`,
+        name: `Piccolo-4B-${precision}`,
+        model_type: "decision" as const,
+        source: "huggingface" as const,
+      };
+      vi.mocked(api.listRecommendedLocalModels).mockResolvedValue([
+        ...mockModels,
+        decision,
+      ]);
+      renderModal();
+      const agents = await screen.findByRole("region", {
+        name: "models.localChatModelsTitle",
+      });
+      const decisions = await screen.findByRole("region", {
+        name: "models.localDecisionModelsTitle",
+      });
+      await waitFor(() => {
+        expect(
+          within(agents).getByText(mockModels[0].name),
+        ).toBeInTheDocument();
+        expect(within(decisions).getByText(decision.name)).toBeInTheDocument();
+      });
+      expect(within(agents).queryByText(decision.name)).not.toBeInTheDocument();
+      expect(within(decisions).queryByRole("link")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("models.localDecisionPurpose"),
+      ).not.toBeInTheDocument();
+      await userEvent.click(
+        within(decisions).getByText("models.localStartServer"),
+      );
+      expect(api.startLocalServer).toHaveBeenCalledWith({
+        model_id: decision.id,
+        model_type: "decision",
+      });
+    },
+  );
 
   describe("组件渲染", () => {
     it("当 open=false 时不渲染内容", () => {

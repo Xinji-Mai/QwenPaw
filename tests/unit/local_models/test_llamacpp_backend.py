@@ -48,7 +48,7 @@ class _FakeServerProcess:
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("size", ["4B", "9B", "27B"])
-@pytest.mark.parametrize("suffix", ["", "-Q8_0", "-Q4_K_M"])
+@pytest.mark.parametrize("suffix", ["", "-BF16", "-Q8_0", "-Q4_K_M"])
 @pytest.mark.parametrize("requested,expected", [(4096, 4096), (65536, 8192)])
 async def test_piccolo_requires_whole_prompt_without_cache(
     size,
@@ -84,9 +84,14 @@ async def test_piccolo_requires_whole_prompt_without_cache(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("modalities", [["decisions"], ["text"], []])
-async def test_piccolo_runtime_capability_gate(modalities, monkeypatch):
+@pytest.mark.parametrize("suffix", ["-Q8_0", "-BF16"])
+async def test_piccolo_runtime_capability_gate(
+    modalities,
+    suffix,
+    monkeypatch,
+):
     backend = _build_downloader(monkeypatch)
-    backend._server_model_name = "agentscope-ai/Piccolo-4B-Q8_0"
+    backend._server_model_name = f"agentscope-ai/Piccolo-4B{suffix}"
     original_client = httpx.AsyncClient
 
     def handler(request):

@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 PICCOLO_REPO_IDS = {
     f"agentscope-ai/Piccolo-{size}B{suffix}"
     for size in (4, 9, 27)
-    for suffix in ("", "-Q8_0", "-Q4_K_M")
+    for suffix in ("", "-BF16", "-Q8_0", "-Q4_K_M")
 }
 PICCOLO_DOWNLOAD_PATTERNS = [
     "*.gguf",
@@ -184,6 +184,23 @@ class ModelManager:
                         name=f"Piccolo-{size}B-Q8_0",
                         model_type="decision",
                         size_bytes=None,
+                        source=DownloadSource.HUGGINGFACE,
+                    ),
+                )
+
+        # Leave room for full-prompt attention and runtime buffers.
+        for size, minimum_memory, weight_bytes in (
+            (4, 24, 8424394496),
+            (9, 32, 17920698400),
+            (27, 80, 53808284096),
+        ):
+            if memory_gb >= minimum_memory:
+                models.append(
+                    LocalModelInfo(
+                        id=f"agentscope-ai/Piccolo-{size}B-BF16",
+                        name=f"Piccolo-{size}B-BF16",
+                        model_type="decision",
+                        size_bytes=weight_bytes,
                         source=DownloadSource.HUGGINGFACE,
                     ),
                 )
