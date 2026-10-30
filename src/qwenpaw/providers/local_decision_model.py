@@ -72,7 +72,7 @@ class LocalDecisionModel(TypeSafeDecisionModel):
 class LocalDecisionProviderMixin:
     """Add native decision calls to QwenPaw's managed llama.cpp provider."""
 
-    def as_decision_model(self, model, *, timeout=10, max_retries=1):
+    def as_decision_model(self, model, *, timeout=30, max_retries=1):
         from ..exceptions import AppBaseException
         from .typesafe_provider import TypeSafeEvaluationError
 
@@ -102,7 +102,7 @@ class LocalDecisionProviderMixin:
         self,
         model,
         *,
-        timeout=10,
+        timeout=30,
         max_retries=1,
     ):
         classifier = None
@@ -123,7 +123,7 @@ class LocalDecisionProviderMixin:
                 await run_async_to_completion(classifier.client.aclose())
             raise
 
-    async def evaluate(self, *, state, questions, model, timeout=4.0):
+    async def evaluate(self, *, state, questions, model, timeout=30.0):
         classifier = await self.as_decision_model_async(
             model,
             timeout=timeout,

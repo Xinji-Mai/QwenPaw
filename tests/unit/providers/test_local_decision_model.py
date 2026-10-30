@@ -33,7 +33,12 @@ def local_fixture(monkeypatch):
             },
         ],
     )
-    state = SimpleNamespace(mode="ok", requests=[], clients=[])
+    state = SimpleNamespace(
+        mode="ok",
+        requests=[],
+        clients=[],
+        client_options=[],
+    )
 
     def handler(req):
         # pylint: disable=too-many-branches
@@ -87,6 +92,7 @@ def local_fixture(monkeypatch):
         )
 
     def make_client(**kwargs):
+        state.client_options.append(kwargs)
         client = AsyncTypeSafeClient(
             transport=httpx.MockTransport(handler),
             **kwargs,
@@ -106,6 +112,32 @@ def local_fixture(monkeypatch):
     monkeypatch.setattr(ProviderManager, "get_instance", lambda: manager)
     state.provider = provider
     return state
+
+
+@pytest.mark.asyncio
+async def test_local_review_timeout_allows_full_prompt_evaluation(local):
+    await local.provider.evaluate(
+        model="piccolo-fixture",
+        state="A bounded local operation",
+        questions={"q": BinaryQuestion(instructions="Safe?")},
+    )
+    assert local.client_options[-1]["timeout"] == 30.0
+
+    await local.provider.evaluate(
+        model="piccolo-fixture",
+        state="A bounded local operation",
+        questions={"q": BinaryQuestion(instructions="Safe?")},
+        timeout=2,
+    )
+    assert local.client_options[-1]["timeout"] == 2
+
+    classifier = await local.provider.as_decision_model_async(
+        "piccolo-fixture",
+    )
+    try:
+        assert local.client_options[-1]["timeout"] == 30
+    finally:
+        await classifier.client.aclose()
 
 
 @pytest.mark.asyncio
