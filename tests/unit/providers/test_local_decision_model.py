@@ -115,13 +115,13 @@ def local_fixture(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_local_review_timeout_allows_full_prompt_evaluation(local):
+async def test_local_review_and_compaction_use_separate_timeout_budgets(local):
     await local.provider.evaluate(
         model="piccolo-fixture",
         state="A bounded local operation",
         questions={"q": BinaryQuestion(instructions="Safe?")},
     )
-    assert local.client_options[-1]["timeout"] == 30.0
+    assert local.client_options[-1]["timeout"] == 7.0
 
     await local.provider.evaluate(
         model="piccolo-fixture",

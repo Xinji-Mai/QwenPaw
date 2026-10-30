@@ -123,7 +123,7 @@ class LocalDecisionProviderMixin:
                 await run_async_to_completion(classifier.client.aclose())
             raise
 
-    async def evaluate(self, *, state, questions, model, timeout=30.0):
+    async def evaluate(self, *, state, questions, model, timeout=7.0):
         classifier = await self.as_decision_model_async(
             model,
             timeout=timeout,
