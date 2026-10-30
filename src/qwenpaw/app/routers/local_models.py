@@ -19,7 +19,6 @@ from ...local_models import (
     LocalModelManager,
 )
 from ...providers.provider import ModelInfo
-from ...config.config import ModelType
 from ...providers.provider_manager import ProviderManager
 
 router = APIRouter(prefix="/local-models", tags=["local-models"])
@@ -93,7 +92,6 @@ class StartServerRequest(BaseModel):
         ...,
         description="The model id of the downloaded local model to serve",
     )
-    model_type: ModelType = "chat"
 
 
 class StartServerResponse(BaseModel):
@@ -312,12 +310,6 @@ async def start_llamacpp_server(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
-        model_type = (
-            "decision"
-            if setup_result.model_info.model_type == "decision"
-            else payload.model_type
-        )
-        setup_result.model_info.model_type = model_type
         await provider_manager.update_provider_async(
             "qwenpaw-local",
             {
@@ -328,7 +320,7 @@ async def start_llamacpp_server(
         await provider_manager.activate_model(
             provider_id="qwenpaw-local",
             model_id=setup_result.model_info.id,
-            model_type=model_type,
+            model_type=setup_result.model_info.model_type,
         )
     except (ValueError, AppBaseException) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

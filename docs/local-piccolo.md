@@ -70,15 +70,3 @@ Q4_K_M is also published after an expanded synthetic regression of 265 requests 
 All text backbone layers and the output projection are retained. MTP and the vision encoder are not used by this text decision path; the original Hugging Face checkpoint remains complete. Verify the BF16 conversion against the full Transformers reference first, then measure quantization error separately. The model repository includes the reference inference script and third-party license notice.
 
 `test-piccolo-layout MODEL.gguf REQUEST.json` emits the actual runtime input and candidate token IDs for comparison with the checkpoint tokenizer; it uses vocabulary-only loading and is a formatter check, not an inference test.
-
-## Console screenshots
-
-English local model selector:
-
-![Chat and decision models in the local selector](images/local-models-en.png)
-
-Chinese local model selector:
-
-![Chinese local model selector](images/local-models-zh.png)
-
-The screenshots use a fresh local preview workspace with no model downloaded or started.

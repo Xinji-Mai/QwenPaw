@@ -357,7 +357,6 @@ describe("LocalModelManageModal", () => {
       );
       expect(api.startLocalServer).toHaveBeenCalledWith({
         model_id: decision.id,
-        model_type: "decision",
       });
     },
   );
@@ -403,7 +402,7 @@ describe("LocalModelManageModal", () => {
 
   describe("模型列表展示", () => {
     it.each(["chat", "decision"] as const)(
-      "starts a downloaded %s model with its declared type",
+      "starts a downloaded %s model through the existing API",
       async (modelType) => {
         const model = { ...mockModels[0], model_type: modelType };
         vi.mocked(api.listRecommendedLocalModels).mockResolvedValue([model]);
@@ -414,7 +413,6 @@ describe("LocalModelManageModal", () => {
         await waitFor(() => {
           expect(api.startLocalServer).toHaveBeenCalledWith({
             model_id: model.id,
-            model_type: modelType,
           });
         });
         expect(api.startLocalModelDownload).not.toHaveBeenCalled();

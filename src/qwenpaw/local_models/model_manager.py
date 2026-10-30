@@ -58,7 +58,7 @@ class DownloadSource(str, Enum):
 class LocalModelInfo(ModelInfo):
     """Metadata for a local model"""
 
-    size_bytes: int | None = Field(
+    size_bytes: int = Field(
         ...,
         description="Model size in bytes, if known",
     )
@@ -176,14 +176,18 @@ class ModelManager:
                 ],
             )
 
-        for size, minimum_memory in ((4, 16), (9, 24), (27, 48)):
+        for size, minimum_memory, weight_bytes in (
+            (4, 16, 4482403872),
+            (9, 24, 9527502656),
+            (27, 48, 28595764992),
+        ):
             if memory_gb >= minimum_memory:
                 models.append(
                     LocalModelInfo(
                         id=f"agentscope-ai/Piccolo-{size}B-Q8_0",
                         name=f"Piccolo-{size}B-Q8_0",
                         model_type="decision",
-                        size_bytes=None,
+                        size_bytes=weight_bytes,
                         source=DownloadSource.HUGGINGFACE,
                     ),
                 )
@@ -493,12 +497,9 @@ class ModelManager:
             buffering=1,
             errors="replace",
         ) as sink_stream:
-            with (
-                contextlib.redirect_stdout(
-                    sink_stream,
-                ),
-                contextlib.redirect_stderr(sink_stream),
-            ):
+            with contextlib.redirect_stdout(
+                sink_stream,
+            ), contextlib.redirect_stderr(sink_stream):
                 return ModelManager._get_modelscope_snapshot_download()(
                     model_id=repo_id,
                     local_dir=str(local_dir),

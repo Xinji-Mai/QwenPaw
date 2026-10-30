@@ -20,10 +20,7 @@ from qwenpaw.providers.provider import ModelInfo
 
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("isolated_secret_dir")
-@pytest.mark.parametrize("runtime_type", ["chat", "decision"])
-async def test_start_restore_and_stop_local_decision_preserves_chat(
-    runtime_type,
-):
+async def test_start_restore_and_stop_local_decision_preserves_chat():
     manager = ProviderManager()
     chat = ModelSlotConfig(provider_id="openai", model="chat-fixture")
     manager.active_model = chat
@@ -36,7 +33,7 @@ async def test_start_restore_and_stop_local_decision_preserves_chat(
             model_info=ModelInfo(
                 id=model_id,
                 name="Piccolo fixture",
-                model_type=runtime_type,
+                model_type="decision",
             ),
         )
 
@@ -46,10 +43,7 @@ async def test_start_restore_and_stop_local_decision_preserves_chat(
         is_model_downloaded=lambda _: True,
     )
     result = await start_llamacpp_server(
-        StartServerRequest(
-            model_id=model_id,
-            model_type="chat" if runtime_type == "decision" else "decision",
-        ),
+        StartServerRequest(model_id=model_id),
         local_manager,
         manager,
     )
@@ -77,5 +71,7 @@ async def test_start_restore_and_stop_local_decision_preserves_chat(
     assert manager.active_model == chat
 
 
-def test_old_start_request_still_defaults_to_chat():
-    assert StartServerRequest(model_id="existing/model").model_type == "chat"
+def test_start_request_keeps_existing_shape():
+    assert StartServerRequest(model_id="existing/model").model_dump() == {
+        "model_id": "existing/model",
+    }

@@ -58,8 +58,7 @@ export const LocalModelRow = memo(function LocalModelRow({
       <div className={styles.modelListItemInfo}>
         <span className={styles.modelListItemName}>{displayName}</span>
         <span className={styles.modelListItemId}>
-          {displayRepoId}
-          {model.size_bytes != null && ` · ${prettyBytes(model.size_bytes)}`}
+          {displayRepoId} · {prettyBytes(model.size_bytes)}
         </span>
       </div>
       <div className={styles.modelListItemActions}>

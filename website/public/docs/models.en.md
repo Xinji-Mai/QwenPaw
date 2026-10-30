@@ -46,41 +46,6 @@ When you do not need to use a model temporarily, you can click **Stop** to stop 
 
 QwenPaw Local will automatically record the model's running state. If you close the QwenPaw process while a QwenPaw Local model is running, it will attempt to restart the last used model the next time you open QwenPaw, so you do not need to start the model manually each time.
 
-### Local decision models
-
-Blink uses the same download and Start controls as local chat models. The
-complete checkpoint repositories are `agentscope-ai/Blink-4B`,
-`agentscope-ai/Blink-9B`, and `agentscope-ai/Blink-27B`. Local GGUF variants use
-separate repositories with a `-Q8_0` suffix, following QwenPaw-Flash's naming.
-
-1. Open **Models → QwenPaw Local → Models**, download the appropriate **Blink Q8_0**
-   model, and click **Start**. If it is absent from the recommended list, use the
-   custom download field, for example `agentscope-ai/Blink-27B-Q8_0`, with Hugging
-   Face as the source.
-2. Confirm **QwenPaw Local / Blink** under **Default models → Decision model**.
-   Starting this catalog entry sets the decision default. The embedded runtime
-   serves one local model at a time; it replaces any chat model in that runtime.
-3. For automatic review, enable **Use decision model** in the chat model menu's
-   **Advanced options**, then select **Decision Model Mode** in the approval menu.
-   The agent's default mode is also configurable under
-   **Configuration → Execution → Tool Approval Mode**.
-4. For context compaction, open **Configuration → Context budget**, enable
-   **Enable Context Compaction**, and turn on **Decision model compaction**.
-   This switch is independent of the chat decision toggle.
-
-Starting a model does not enable review or compaction. Blink currently requires
-the companion llama.cpp patch and runtime installation described in
-[the local Blink guide](https://github.com/agentscope-ai/QwenPaw/blob/main/docs/local-blink.md).
-An unpatched upstream binary or ordinary Ollama Chat Completions does not support
-Blink's inference contract.
-
-The native Jev interface sends questions to `/v1/systemone`. The runtime applies
-bidirectional prompt attention in full-attention layers, preserves the original
-linear-attention computation, and returns probabilities computed from candidate
-token logits. It does not generate JSON answers or probability estimates.
-Invalid responses retain the native human-approval or normal-compaction fallback.
-Candidate probabilities still require task-specific calibration and evaluation.
-
 ## Ollama Configuration
 
 Before using Ollama, you need to install the latest version of [Ollama](https://ollama.com/download) on your machine, download at least one model, and set the Context Length to at least 32k on the settings page.

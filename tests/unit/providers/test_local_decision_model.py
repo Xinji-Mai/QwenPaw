@@ -14,7 +14,6 @@ from agentscope.classifier import BinaryQuestion
 
 from qwenpaw.config.config import AgentProfileConfig, ModelSlotConfig
 from qwenpaw.providers import ProviderManager
-from qwenpaw.providers.ollama_provider import OllamaProvider
 from qwenpaw.providers.services.qwenpaw import QwenPawProvider
 from qwenpaw.security import decision_model
 
@@ -22,12 +21,10 @@ from qwenpaw.security import decision_model
 @pytest.fixture(name="local")
 def local_fixture(monkeypatch):
     # pylint: disable=too-many-statements
-    cls = QwenPawProvider
-    provider = cls(
-        id="ollama" if cls is OllamaProvider else "qwenpaw-local",
+    provider = QwenPawProvider(
+        id="qwenpaw-local",
         name="Local fixture",
-        base_url="http://127.0.0.1:9000"
-        + ("" if cls is OllamaProvider else "/v1"),
+        base_url="http://127.0.0.1:9000/v1",
         models=[
             {
                 "id": "piccolo-fixture",
