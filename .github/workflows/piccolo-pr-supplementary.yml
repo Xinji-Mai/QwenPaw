@@ -1,0 +1,59 @@
+name: Piccolo PR supplementary checks
+
+on:
+  push:
+    branches: [codex/piccolo-pr-verification-20261104]
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-manifest:
+    name: Frozen runtime manifest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15, windows-2022]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install "pip>=26.2.2" "certifi>=2026.10.19" "pyinstaller>=6.0.0"
+      - run: python scripts/verify_piccolo_frozen_manifest.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-manifest-${{ matrix.os }}
+          path: |
+            frozen-manifest-results/*.json
+            frozen-manifest-results/*.log
+  plugin-process:
+    name: Plugin subprocess regression (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - run: python -m pip install --upgrade "pip>=26.2.2" "certifi>=2026.10.19"
+      - run: python -m pip install -e ".[dev,test,full]"
+      - name: Verify subprocess fixtures on the official CI operating system
+        run: >-
+          pytest tests/unit/plugins/test_plugin_process.py
+          tests/unit/local_models
+          tests/unit/scripts/test_piccolo_runtime_publish.py
+          -q --timeout=300 --junitxml=plugin-process-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: plugin-process-python-${{ matrix.python }}
+          path: plugin-process-results.xml
